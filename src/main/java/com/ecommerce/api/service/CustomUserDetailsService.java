@@ -16,7 +16,6 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // ✅ FIXED: Constructor Injection explicitly
     @Autowired
     public CustomUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -25,16 +24,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        // ✅ Prefix "ROLE_" for Spring Security
         Set<GrantedAuthority> authorities = user.getRoles().stream()
-            .map(SimpleGrantedAuthority::new)
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
             .collect(Collectors.toSet());
 
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                authorities
+            user.getUsername(),
+            user.getPassword(),
+            authorities
         );
     }
 }
