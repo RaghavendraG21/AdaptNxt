@@ -1,51 +1,41 @@
 package com.ecommerce.api.service;
 
-import com.ecommerce.api.dto.CartItemDTO;
-import com.ecommerce.api.model.CartItem;
-import com.ecommerce.api.model.Product;
+import com.ecommerce.api.dto.SignUpRequest;
 import com.ecommerce.api.model.User;
-import com.ecommerce.api.repository.CartItemRepository;
-import com.ecommerce.api.repository.ProductRepository;
+import com.ecommerce.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
-public class CartService {
+public class UserService {
 
-    @Autowired private CartItemRepository cartRepo;
-    @Autowired private ProductRepository productRepo;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
-    public void addItemToCart(User user, CartItemDTO dto) {
-        Product product = productRepo.findById(dto.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
-        CartItem item = cartRepo.findByUserAndProduct(user, product).orElse(new CartItem());
+    public void registerUser(SignUpRequest request) {
+        if (userRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Username or email already exists");
+        }
 
-        item.setUser(user);
-        item.setProduct(product);
-        item.setQuantity(item.getQuantity() + dto.getQuantity());
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        cartRepo.save(item);
+        // ✅ USE ROLE from frontend (CUSTOMER or ADMIN)
+        Set<String> roles = new HashSet<>();
+        roles.add(request.getRole().toUpperCase());  // e.g., "CUSTOMER" or "ADMIN"
+        user.setRoles(roles);
+
+        userRepository.save(user);
     }
 
-    public List<CartItem> getCartItems(User user) {
-        return cartRepo.findByUser(user);
-    }
-
-    public void updateItem(User user, Long productId, int quantity) {
-        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
-        CartItem item = cartRepo.findByUserAndProduct(user, product).orElseThrow(() -> new RuntimeException("Cart item not found"));
-
-        item.setQuantity(quantity);
-        cartRepo.save(item);
-    }
-
-    public void removeItem(User user, Long productId) {
-        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
-        cartRepo.deleteByUserAndProduct(user, product);
-    }
-
-    public void clearCart(User user) {
-        cartRepo.deleteByUser(user);
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }
