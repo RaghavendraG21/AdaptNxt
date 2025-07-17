@@ -7,34 +7,34 @@ import com.ecommerce.api.service.CartService;
 import com.ecommerce.api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/cart") // Removed /api prefix (already handled in route mapping)
+@RequestMapping("/api/cart")
 public class CartController {
 
     @Autowired private CartService cartService;
     @Autowired private UserService userService;
 
-    // ✅ Use Spring's UserDetails, then map to your User entity
-    private User getAppUser(UserDetails userDetails) {
-        return userService.findByUsername(userDetails.getUsername()).orElseThrow();
+    private User getAppUser(String username) {
+        return userService.findByUsername(username).orElseThrow();
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestBody CartItemDTO dto, @AuthenticationPrincipal UserDetails userDetails) {
-        User user = getAppUser(userDetails);
+    public ResponseEntity<String> addToCart(@RequestBody CartItemDTO dto, Authentication authentication) {
+        String username = authentication.getName();
+        User user = getAppUser(username);
         cartService.addItemToCart(user, dto);
         return ResponseEntity.ok("Item added to cart");
     }
 
     @GetMapping
-    public List<CartItem> viewCart(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = getAppUser(userDetails);
+    public List<CartItem> viewCart(Authentication authentication) {
+        String username = authentication.getName();
+        User user = getAppUser(username);
         return cartService.getCartItems(user);
     }
 
@@ -42,15 +42,17 @@ public class CartController {
     public ResponseEntity<String> updateCart(
             @PathVariable Long productId,
             @RequestParam int quantity,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        User user = getAppUser(userDetails);
+            Authentication authentication) {
+        String username = authentication.getName();
+        User user = getAppUser(username);
         cartService.updateItem(user, productId, quantity);
         return ResponseEntity.ok("Cart updated");
     }
 
     @DeleteMapping("/remove/{productId}")
-    public ResponseEntity<String> removeItem(@PathVariable Long productId, @AuthenticationPrincipal UserDetails userDetails) {
-        User user = getAppUser(userDetails);
+    public ResponseEntity<String> removeItem(@PathVariable Long productId, Authentication authentication) {
+        String username = authentication.getName();
+        User user = getAppUser(username);
         cartService.removeItem(user, productId);
         return ResponseEntity.ok("Item removed");
     }
