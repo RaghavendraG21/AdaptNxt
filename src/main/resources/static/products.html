@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Products</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .product { border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h2>Products</h2>
+  <div id="products"></div>
+  <script>
+    async function loadProducts() {
+      const res = await fetch("http://localhost:8081/api/products");
+      const products = await res.json();
+      document.getElementById("products").innerHTML = products.map(p => 
+        `<div class="product"><b>${p.name}</b><br/>₹${p.price}<br/>${p.description}</div>`
+      ).join('');
+    }
+    loadProducts();
+  </script>
+</body>
+</html>
