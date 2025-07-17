@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Orders</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
+    .order { background: #fff; border: 1px solid #ccc; padding: 16px; margin-bottom: 10px; border-radius: 8px; }
+    .item { margin-left: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Order History</h2>
+  <div id="orderList"></div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Login required");
+      window.location.href = "login.html";
+    }
+
+    fetch("http://localhost:8081/api/orders", {
+      headers: { "Authorization": "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(orders => {
+      const list = document.getElementById("orderList");
+      list.innerHTML = "";
+
+      if (orders.length === 0) {
+        list.innerHTML = "<p>No orders found.</p>";
+        return;
+      }
+
+      orders.forEach(order => {
+        const div = document.createElement("div");
+        div.className = "order";
+        div.innerHTML = `
+          <p><strong>Order ID:</strong> ${order.id}</p>
+          <p><strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
+          <p><strong>Status:</strong> ${order.status}</p>
+          <p><strong>Total:</strong> ₹${order.totalAmount}</p>
+          <p><strong>Items:</strong></p>
+          <ul>
+            ${order.items.map(i => `<li class="item">${i.product.name} x ${i.quantity} - ₹${i.price}</li>`).join("")}
+          </ul>
+        `;
+        list.appendChild(div);
+      });
+    });
+  </script>
+</body>
+</html>
